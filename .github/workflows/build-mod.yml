@@ -72,6 +72,21 @@ jobs:
         run: |
           set -e
           cp mod/build-output.log build-log.txt 2>/dev/null || echo "no log captured" > build-log.txt
+          {
+            echo
+            echo "=== diagnostics: which Minecraft jar/mappings were on the classpath ==="
+            find / -name "*.jar" -path "*loom*" 2>/dev/null | head -20
+            MCJAR=$(find / -name "*.jar" -path "*loom*" 2>/dev/null | grep -iE "minecraft" | head -1)
+            echo "MCJAR=$MCJAR"
+            if [ -n "$MCJAR" ]; then
+              for c in net/minecraft/resources/Identifier net/minecraft/resources/ResourceLocation \
+                       net/minecraft/client/Camera net/minecraft/client/Minecraft \
+                       net/minecraft/client/MinecraftClient net/minecraft/util/Identifier \
+                       com/mojang/blaze3d/framegraph/FrameGraphBuilder net/minecraft/client/renderer/LevelRenderer; do
+                printf "%-55s %s\n" "$c" "$(unzip -l "$MCJAR" 2>/dev/null | grep -c "$c.class")"
+              done
+            fi
+          } >> build-log.txt 2>&1
           tail -c 150000 build-log.txt > build-log-tail.txt && mv build-log-tail.txt build-log.txt
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

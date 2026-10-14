@@ -25,7 +25,8 @@ loom {
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    // Loom's default mappings are Mojang's official ones on current versions.
+    // Pin the mapping set explicitly rather than relying on Loom's default.
+    mappings loom.officialMojangMappings()
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 }
 
