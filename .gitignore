@@ -1,0 +1,4 @@
+build/
+vanilla_all_paths.txt
+__pycache__/
+.venv/
