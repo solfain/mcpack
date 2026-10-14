@@ -75,18 +75,21 @@ jobs:
           cp mod/build-output.log build-log.txt 2>/dev/null || echo "no log captured" > build-log.txt
           {
             echo
-            echo "=== diagnostics: which Minecraft jar/mappings were on the classpath ==="
-            find / -name "*.jar" -path "*loom*" 2>/dev/null | head -20
-            MCJAR=$(find / -name "*.jar" -path "*loom*" 2>/dev/null | grep -iE "minecraft" | head -1)
-            echo "MCJAR=$MCJAR"
-            if [ -n "$MCJAR" ]; then
-              for c in net/minecraft/resources/Identifier net/minecraft/resources/ResourceLocation \
-                       net/minecraft/client/Camera net/minecraft/client/Minecraft \
-                       net/minecraft/client/MinecraftClient net/minecraft/util/Identifier \
-                       com/mojang/blaze3d/framegraph/FrameGraphBuilder net/minecraft/client/renderer/LevelRenderer; do
-                printf "%-55s %s\n" "$c" "$(unzip -l "$MCJAR" 2>/dev/null | grep -c "$c.class")"
+            echo "=== diagnostics: actual Minecraft class names in the deobf jars ==="
+            for J in $(ls /home/runner/.gradle/caches/fabric-loom/minecraftMaven/net/minecraft/*/1.21.11/*.jar 2>/dev/null); do
+              echo "--- $J"
+              unzip -l "$J" 2>/dev/null | grep -cE "\.class$" | sed "s/^/    total classes: /"
+              for c in net/minecraft/client/Minecraft net/minecraft/client/MinecraftClient \
+                       net/minecraft/client/Camera net/minecraft/client/render/Camera \
+                       net/minecraft/client/renderer/LevelRenderer net/minecraft/client/render/WorldRenderer \
+                       net/minecraft/resources/Identifier net/minecraft/resources/ResourceLocation \
+                       net/minecraft/util/Identifier net/minecraft/server/packs/resources/ResourceManager \
+                       net/minecraft/resource/ResourceManager com/mojang/blaze3d/framegraph/FrameGraphBuilder; do
+                printf "    %-58s %s\n" "$c" "$(unzip -l "$J" 2>/dev/null | grep -c "$c.class")"
               done
-            fi
+              echo "    --- package sample ---"
+              unzip -l "$J" 2>/dev/null | grep -oE "net/minecraft/[a-z_]+/" | sort -u | head -12 | sed "s/^/      /"
+            done
           } >> build-log.txt 2>&1
           tail -c 150000 build-log.txt > build-log-tail.txt && mv build-log-tail.txt build-log.txt
           git config user.name  "github-actions[bot]"
