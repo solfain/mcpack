@@ -65,14 +65,17 @@ jobs:
             echo "jar unchanged - nothing to publish"
           fi
 
+      # The agent sandbox cannot download run logs (its log host is firewalled),
+      # so failed builds publish the log to a scratch branch it can fetch instead.
       - name: Publish build log on failure
         if: failure()
         run: |
           set -e
           cp mod/build-output.log build-log.txt 2>/dev/null || echo "no log captured" > build-log.txt
-          tail -c 120000 build-log.txt > build-log-tail.txt && mv build-log-tail.txt build-log.txt
+          tail -c 150000 build-log.txt > build-log-tail.txt && mv build-log-tail.txt build-log.txt
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B ci-logs
           git add -f build-log.txt
-          git commit -m "ci: build log [skip ci]" || true
-          git push || true
+          git commit -m "ci: build log for ${GITHUB_SHA::7} [skip ci]" || true
+          git push --force origin ci-logs || true
