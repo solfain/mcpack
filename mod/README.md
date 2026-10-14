@@ -11,10 +11,27 @@ Locally: `cd mod && gradle build` (needs JDK 21; Gradle 8.14 or newer).
 
 ## Status
 
-* [x] project skeleton + CI build
+* [x] project skeleton + CI build (`dist/mod/mcpack-sky-0.1.0.jar`, 12 KB)
 * [x] OptiFine sky `.properties` parsing (fade windows, blend mode, rotation, axis)
-* [x] hook into the sky render pass (1.21.11 frame-graph entry point)
-* [ ] drawing the layers (render pipeline + core shaders) — in progress
+* [x] hook into the sky render pass — `WorldRenderer.renderSky(FrameGraphBuilder, Camera, GpuBufferSlice)`
+* [ ] drawing the layers (render pipeline + core shaders) — **not implemented yet**
+
+**What the current jar does:** on entering a world it reads every `optifine/sky/world0/*.properties`
+from the active packs, parses them, and logs what it found (including any layer whose texture is
+missing from the pack). It does not draw anything yet, so it is a test build for validating the
+loading path — check the log for `[mcpack-sky]` lines.
+
+## Toolchain notes (learned the hard way)
+
+* 1.21.11 still needs remapping: the plain `net.fabricmc.fabric-loom` plugin is the **no-remap**
+  variant used for the unobfuscated 26.x game; this project uses the era-matching
+  `fabric-loom` **1.12-SNAPSHOT** with Yarn `1.21.11+build.6`.
+* Build with **JDK 21** and **Gradle 8.14** (Loom 1.18/Gradle 9.x target the newer game and will
+  leave the 1.21.11 jar obfuscated).
+* Client classes (rendering) must live in `src/client/java`; the common classpath has no
+  client-only classes in 1.21.9+.
+* Loom 1.12 disables the legacy Mixin annotation processor: do **not** add `sponge-mixin` as an
+  `annotationProcessor`, or mixin target remapping fails at compile time.
 
 ## Notes
 

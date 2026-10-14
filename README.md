@@ -10,6 +10,8 @@ Home of the **Vermeil** resource pack and its port to modern Minecraft.
 | `tools/build_port.sh` | one-shot rebuild of the port from the source zip |
 | `tools/fetch_vanilla_paths.sh` | pulls the canonical vanilla asset tree used to validate every rename |
 | `docs/port-report.md` | full report: what moved, what was kept, what could not be mapped |
+| `mod/` | **mcpack-sky** - a Fabric client mod that renders the pack's OptiFine-layout custom skies without OptiFine (work in progress) |
+| `dist/mod/mcpack-sky-0.1.0.jar` | build output of that mod, published automatically by GitHub Actions |
 
 ## Install
 
