@@ -87,6 +87,10 @@ jobs:
                        net/minecraft/resource/ResourceManager com/mojang/blaze3d/framegraph/FrameGraphBuilder; do
                 printf "    %-58s %s\n" "$c" "$(unzip -l "$J" 2>/dev/null | grep -c "$c.class")"
               done
+              echo "    --- real class names sample ---"
+              unzip -l "$J" 2>/dev/null | grep -oE "net/minecraft/[a-zA-Z0-9_/]+/(Minecraft|MinecraftClient|Identifier|ResourceLocation|ResourceManager|WorldRenderer|LevelRenderer|Camera|FrameGraphBuilder)\.class" | head -12 | sed "s/^/      /"
+              echo "    --- first 10 net/minecraft entries ---"
+              unzip -l "$J" 2>/dev/null | grep -oE "net/minecraft/[a-zA-Z0-9_/]+\.class" | head -10 | sed "s/^/      /"
               echo "    --- package sample ---"
               unzip -l "$J" 2>/dev/null | grep -oE "net/minecraft/[a-z_]+/" | sort -u | head -12 | sed "s/^/      /"
             done

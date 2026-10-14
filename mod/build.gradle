@@ -25,8 +25,8 @@ loom {
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    // Yarn mappings, pinned to a build verified against the 1.21.11 mapping files.
-    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    // Loom 1.18 no longer accepts a "mappings" dependency: it selects the
+    // mapping set itself (the Minecraft dependency below is all that is needed).
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 }
 
