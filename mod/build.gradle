@@ -10,6 +10,19 @@ base {
     archivesName = project.archives_base_name
 }
 
+loom {
+    // 1.21.9+ ships client- and server-specific classes; rendering code has to live
+    // in the client source set or the client classes are not on the compile classpath.
+    splitEnvironmentSourceSets()
+
+    mods {
+        "mcpacksky" {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.client
+        }
+    }
+}
+
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     // Loom's default mappings are Mojang's official ones on current versions.

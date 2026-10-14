@@ -36,7 +36,7 @@ public class McpackSkyClient implements ClientModInitializer {
     private static final Map<String, List<SkyLayer>> LAYERS = new LinkedHashMap<>();
     private static final List<String> PROBLEMS = new ArrayList<>();
 
-    private static Set<String> lastPackSet = Set.of();
+    private static Object lastLevel = null;
     private static boolean everLoaded = false;
 
     @Override
@@ -44,21 +44,20 @@ public class McpackSkyClient implements ClientModInitializer {
         LOGGER.info("[mcpack-sky] initialising (custom skies without OptiFine)");
     }
 
-    /** Called from the sky render hook; (re)loads when the enabled pack set changes. */
+    /**
+     * Called from the sky render hook. Layer definitions are read once per world
+     * entry (and after a pack change while out of a world), so nothing is parsed
+     * per frame.
+     */
     public static void onSkyPass(Camera camera) {
-        Set<String> packs = enabledPacks();
-        if (!everLoaded || !packs.equals(lastPackSet)) {
-            lastPackSet = packs;
+        Minecraft minecraft = Minecraft.getInstance();
+        Object level = minecraft.level;
+        if (!everLoaded || level != lastLevel) {
             everLoaded = true;
-            loadLayers(Minecraft.getInstance().getResourceManager());
-        }
-    }
-
-    private static Set<String> enabledPacks() {
-        try {
-            return new HashSet<>(Minecraft.getInstance().getResourcePackRepository().getSelectedIds());
-        } catch (Throwable t) {
-            return Set.of();
+            lastLevel = level;
+            if (level != null) {
+                loadLayers(minecraft.getResourceManager());
+            }
         }
     }
 
