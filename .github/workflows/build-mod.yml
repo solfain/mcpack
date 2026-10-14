@@ -34,7 +34,8 @@ jobs:
         working-directory: mod
         run: |
           set +e
-          ./gradlew build --no-daemon --console=plain --stacktrace > build-output.log 2>&1
+          ./gradlew printCp --no-daemon --console=plain > build-output.log 2>&1
+          ./gradlew build --no-daemon --console=plain --stacktrace >> build-output.log 2>&1
           rc=$?
           # print a readable tail for the run summary
           tail -c 20000 build-output.log
