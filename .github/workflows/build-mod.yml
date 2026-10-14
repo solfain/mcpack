@@ -2,7 +2,8 @@ name: build-mod
 
 # Builds the mcpack-sky Fabric mod and publishes the jar into dist/mod/.
 # Runs on GitHub's runners because the agent sandbox cannot reach the Maven /
-# Mojang hosts that a Minecraft mod build needs.
+# Mojang hosts a Minecraft mod build needs; the build log is committed back on
+# failure so the agent can read it (its log-download host is firewalled).
 on:
   push:
     paths:
@@ -19,22 +20,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: '21'
+          distribution: microsoft
+          java-version: '25'
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.14'
+      - name: Make wrapper executable
+        run: chmod +x mod/gradlew
 
       - name: Build
+        id: build
         working-directory: mod
-        run: gradle build --no-daemon --stacktrace
+        run: |
+          set +e
+          ./gradlew build --no-daemon --console=plain --stacktrace > build-output.log 2>&1
+          rc=$?
+          # print a readable tail for the run summary
+          tail -c 20000 build-output.log
+          exit $rc
 
       - name: Upload jar artefact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: mcpack-sky-jar
@@ -42,11 +49,12 @@ jobs:
           if-no-files-found: error
 
       - name: Publish jar into the repo
-        if: github.event_name == 'push'
+        if: success() && github.event_name == 'push'
         run: |
           set -e
           mkdir -p dist/mod
-          cp mod/build/libs/*[0-9].jar dist/mod/ 2>/dev/null || cp mod/build/libs/*.jar dist/mod/
+          cp mod/build/libs/*.jar dist/mod/ 2>/dev/null || true
+          rm -f dist/mod/*-sources.jar dist/mod/*-dev.jar
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ -n "$(git status --porcelain dist/mod)" ]; then
@@ -56,3 +64,15 @@ jobs:
           else
             echo "jar unchanged - nothing to publish"
           fi
+
+      - name: Publish build log on failure
+        if: failure()
+        run: |
+          set -e
+          cp mod/build-output.log build-log.txt 2>/dev/null || echo "no log captured" > build-log.txt
+          tail -c 120000 build-log.txt > build-log-tail.txt && mv build-log-tail.txt build-log.txt
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f build-log.txt
+          git commit -m "ci: build log [skip ci]" || true
+          git push || true

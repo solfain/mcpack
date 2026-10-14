@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.18-SNAPSHOT'
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
     id 'maven-publish'
 }
 
@@ -10,16 +10,10 @@ base {
     archivesName = project.archives_base_name
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    // Mojang's own mappings: keeps this in sync with the names used by other
-    // 1.21.11 sky mods, so the render calls can be cross-checked against them.
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    // Loom's default mappings are Mojang's official ones on current versions.
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 }
 
 processResources {
@@ -29,6 +23,8 @@ processResources {
     }
 }
 
+// Compile for Java 21 (what Minecraft 1.21.11 runs on) even though the build
+// runs on a JDK 25 toolchain.
 tasks.withType(JavaCompile).configureEach {
     it.options.release = 21
 }
