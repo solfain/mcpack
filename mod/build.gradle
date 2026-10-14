@@ -30,6 +30,10 @@ dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    // Fabric Loader no longer exposes Mixin transitively on the compile classpath,
+    // so the annotations are declared explicitly (same version Loom resolves).
+    implementation "net.fabricmc:sponge-mixin:${project.mixin_version}"
+    annotationProcessor "net.fabricmc:sponge-mixin:${project.mixin_version}"
 }
 
 processResources {
