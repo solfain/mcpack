@@ -32,8 +32,9 @@ dependencies {
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
     // Fabric Loader no longer exposes Mixin transitively on the compile classpath,
     // so the annotations are declared explicitly (same version Loom resolves).
+    // annotations only - Loom 1.12 disables the legacy Mixin annotation processor by
+    // default and remaps mixin targets itself, so do not add it as an annotationProcessor.
     implementation "net.fabricmc:sponge-mixin:${project.mixin_version}"
-    annotationProcessor "net.fabricmc:sponge-mixin:${project.mixin_version}"
 }
 
 processResources {
