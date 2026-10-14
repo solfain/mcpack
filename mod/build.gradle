@@ -1,5 +1,7 @@
 plugins {
-    id 'net.fabricmc.fabric-loom' version "${loom_version}"
+    // -remap variant: the plain 'net.fabricmc.fabric-loom' plugin is the no-remap
+    // one used for unobfuscated future versions; 1.21.11 still needs remapping.
+    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
     id 'maven-publish'
 }
 
@@ -25,8 +27,7 @@ loom {
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    // Loom 1.18 no longer accepts a "mappings" dependency: it selects the
-    // mapping set itself (the Minecraft dependency below is all that is needed).
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 }
 
