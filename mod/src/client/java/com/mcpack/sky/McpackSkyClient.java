@@ -1,11 +1,11 @@
 package com.mcpack.sky;
 
 import net.fabricmc.api.ClientModInitializer;
-import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
-import net.minecraft.resources.Identifier;
-import net.minecraft.server.packs.resources.Resource;
-import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.Camera;
+import net.minecraft.resource.Resource;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +36,7 @@ public class McpackSkyClient implements ClientModInitializer {
     private static final Map<String, List<SkyLayer>> LAYERS = new LinkedHashMap<>();
     private static final List<String> PROBLEMS = new ArrayList<>();
 
-    private static Object lastLevel = null;
+    private static Object lastWorld = null;
     private static boolean everLoaded = false;
 
     @Override
@@ -46,17 +46,16 @@ public class McpackSkyClient implements ClientModInitializer {
 
     /**
      * Called from the sky render hook. Layer definitions are read once per world
-     * entry (and after a pack change while out of a world), so nothing is parsed
-     * per frame.
+     * entry, so nothing is parsed per frame.
      */
     public static void onSkyPass(Camera camera) {
-        Minecraft minecraft = Minecraft.getInstance();
-        Object level = minecraft.level;
-        if (!everLoaded || level != lastLevel) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        Object world = client.world;
+        if (!everLoaded || world != lastWorld) {
             everLoaded = true;
-            lastLevel = level;
-            if (level != null) {
-                loadLayers(minecraft.getResourceManager());
+            lastWorld = world;
+            if (world != null) {
+                loadLayers(client.getResourceManager());
             }
         }
     }
@@ -67,10 +66,11 @@ public class McpackSkyClient implements ClientModInitializer {
         PROBLEMS.clear();
 
         Map<String, Properties> files = new LinkedHashMap<>();
-        for (Map.Entry<Identifier, Resource> entry : manager.listResources(
+        Map<Identifier, Resource> found = manager.findResources(
                 "optifine/sky/" + WORLD_OVERWORLD,
-                id -> id.getPath().endsWith(".properties")).entrySet()) {
-            try (InputStream in = entry.getValue().open()) {
+                id -> id.getPath().endsWith(".properties"));
+        for (Map.Entry<Identifier, Resource> entry : found.entrySet()) {
+            try (InputStream in = entry.getValue().getInputStream()) {
                 Properties props = new Properties();
                 props.load(in);
                 files.put(baseName(entry.getKey().getPath(), ".properties"), props);
@@ -84,7 +84,7 @@ public class McpackSkyClient implements ClientModInitializer {
         }
 
         Set<String> textures = new HashSet<>();
-        for (Identifier id : manager.listResources(
+        for (Identifier id : manager.findResources(
                 "optifine/sky/" + WORLD_OVERWORLD,
                 id -> id.getPath().endsWith(".png")).keySet()) {
             textures.add(baseName(id.getPath(), ".png"));

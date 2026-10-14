@@ -4,7 +4,7 @@
   "package": "com.mcpack.sky.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "LevelRendererMixin"
+    "WorldRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

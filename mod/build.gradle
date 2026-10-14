@@ -25,8 +25,8 @@ loom {
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    // No mappings line: current Minecraft versions ship unobfuscated, so Loom
-    // uses the game's own class/method names directly.
+    // Yarn mappings, pinned to a build verified against the 1.21.11 mapping files.
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 }
 
