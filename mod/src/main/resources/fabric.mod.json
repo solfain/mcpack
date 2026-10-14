@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "mcpacksky",
+  "version": "${version}",
+  "name": "mcpack-sky",
+  "description": "Renders custom sky layers from resource packs (OptiFine/MCPatcher optifine/sky layout) without OptiFine.",
+  "authors": ["mcpack"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.mcpack.sky.McpackSkyClient"]
+  },
+  "mixins": [
+    {
+      "config": "mcpacksky.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21"
+  }
+}

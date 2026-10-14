@@ -1,0 +1,78 @@
+plugins {
+    // Classic Loom id (still published): the newer 'net.fabricmc.fabric-loom' id is
+    // the no-remap variant used for unobfuscated future versions, and 1.21.11 still
+    // needs remapping.
+    id 'fabric-loom' version "${loom_version}"
+    id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+loom {
+    // 1.21.9+ ships client- and server-specific classes; rendering code has to live
+    // in the client source set or the client classes are not on the compile classpath.
+    splitEnvironmentSourceSets()
+
+    mods {
+        "mcpacksky" {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.client
+        }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    // Fabric Loader no longer exposes Mixin transitively on the compile classpath,
+    // so the annotations are declared explicitly (same version Loom resolves).
+    // annotations only - Loom 1.12 disables the legacy Mixin annotation processor by
+    // default and remaps mixin targets itself, so do not add it as an annotationProcessor.
+    implementation "net.fabricmc:sponge-mixin:${project.mixin_version}"
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+// Compile for Java 21 (what Minecraft 1.21.11 runs on) even though the build
+// runs on a JDK 25 toolchain.
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.base.archivesName.get()}" }
+    }
+}
+
+// Diagnostic: prints what is actually on the compile classpath (used by CI logs).
+tasks.register("printCp") {
+    doLast {
+        ["mainCompileClasspath", "compileClasspath", "clientCompileClasspath", "minecraft"].each { name ->
+            def cfg = configurations.findByName(name)
+            if (cfg != null && cfg.canBeResolved) {
+                println "=== ${name} ==="
+                cfg.files.each { println "  ${it}" }
+            }
+        }
+        println "=== source sets ==="
+        project.sourceSets.each { println "  ${it.name}" }
+    }
+}

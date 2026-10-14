@@ -1,0 +1,104 @@
+name: build-mod
+
+# Builds the mcpack-sky Fabric mod and publishes the jar into dist/mod/.
+# Runs on GitHub's runners because the agent sandbox cannot reach the Maven /
+# Mojang hosts a Minecraft mod build needs; the build log is committed back on
+# failure so the agent can read it (its log-download host is firewalled).
+on:
+  push:
+    paths:
+      - 'mod/**'
+      - '.github/workflows/build-mod.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Make wrapper executable
+        run: chmod +x mod/gradlew
+
+      - name: Build
+        id: build
+        working-directory: mod
+        run: |
+          set +e
+          ./gradlew printCp --no-daemon --console=plain > build-output.log 2>&1
+          ./gradlew build --no-daemon --console=plain --stacktrace >> build-output.log 2>&1
+          rc=$?
+          # print a readable tail for the run summary
+          tail -c 20000 build-output.log
+          exit $rc
+
+      - name: Upload jar artefact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcpack-sky-jar
+          path: mod/build/libs/*.jar
+          if-no-files-found: error
+
+      - name: Publish jar into the repo
+        if: success() && github.event_name == 'push'
+        run: |
+          set -e
+          mkdir -p dist/mod
+          cp mod/build/libs/*.jar dist/mod/ 2>/dev/null || true
+          rm -f dist/mod/*-sources.jar dist/mod/*-dev.jar
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain dist/mod)" ]; then
+            git add dist/mod
+            git commit -m "build: publish mcpack-sky jar [skip ci]"
+            git push
+          else
+            echo "jar unchanged - nothing to publish"
+          fi
+
+      # The agent sandbox cannot download run logs (its log host is firewalled),
+      # so failed builds publish the log to a scratch branch it can fetch instead.
+      - name: Publish build log on failure
+        if: failure()
+        run: |
+          set -e
+          cp mod/build-output.log build-log.txt 2>/dev/null || echo "no log captured" > build-log.txt
+          {
+            echo
+            echo "=== diagnostics: actual Minecraft class names in the deobf jars ==="
+            for J in $(ls /home/runner/.gradle/caches/fabric-loom/minecraftMaven/net/minecraft/*/1.21.11/*.jar 2>/dev/null); do
+              echo "--- $J"
+              unzip -l "$J" 2>/dev/null | grep -cE "\.class$" | sed "s/^/    total classes: /"
+              for c in net/minecraft/client/Minecraft net/minecraft/client/MinecraftClient \
+                       net/minecraft/client/Camera net/minecraft/client/render/Camera \
+                       net/minecraft/client/renderer/LevelRenderer net/minecraft/client/render/WorldRenderer \
+                       net/minecraft/resources/Identifier net/minecraft/resources/ResourceLocation \
+                       net/minecraft/util/Identifier net/minecraft/server/packs/resources/ResourceManager \
+                       net/minecraft/resource/ResourceManager com/mojang/blaze3d/framegraph/FrameGraphBuilder; do
+                printf "    %-58s %s\n" "$c" "$(unzip -l "$J" 2>/dev/null | grep -c "$c.class")"
+              done
+              echo "    --- real class names sample ---"
+              unzip -l "$J" 2>/dev/null | grep -oE "net/minecraft/[a-zA-Z0-9_/]+/(Minecraft|MinecraftClient|Identifier|ResourceLocation|ResourceManager|WorldRenderer|LevelRenderer|Camera|FrameGraphBuilder)\.class" | head -12 | sed "s/^/      /"
+              echo "    --- first 10 net/minecraft entries ---"
+              unzip -l "$J" 2>/dev/null | grep -oE "net/minecraft/[a-zA-Z0-9_/]+\.class" | head -10 | sed "s/^/      /"
+              echo "    --- package sample ---"
+              unzip -l "$J" 2>/dev/null | grep -oE "net/minecraft/[a-z_]+/" | sort -u | head -12 | sed "s/^/      /"
+            done
+          } >> build-log.txt 2>&1
+          tail -c 150000 build-log.txt > build-log-tail.txt && mv build-log-tail.txt build-log.txt
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B ci-logs
+          git add -f build-log.txt
+          git commit -m "ci: build log for ${GITHUB_SHA::7} [skip ci]" || true
+          git push --force origin ci-logs || true

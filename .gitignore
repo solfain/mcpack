@@ -1,0 +1,7 @@
+build/
+vanilla_all_paths.txt
+__pycache__/
+.venv/
+mod/.gradle/
+mod/build/
+mod/build-output.log
